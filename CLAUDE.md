@@ -23,6 +23,7 @@ uv run python -m etl run [--offline]       # --offline reuses .data/raw (~20 s)
 uv run python -m etl bulletin [--provider auto|anthropic|ollama] [--quarters N]
 uv run pytest -q
 cd web && npm ci && npm run build          # tsc --noEmit + vite build; npm run dev for local
+# web/src: main.ts (shell, routing, palette, keys) · views.ts (five views + layers) · charts.ts (ECharts) · ui.ts · data.ts
 ```
 
 ## Invariants
@@ -31,6 +32,10 @@ cd web && npm ci && npm run build          # tsc --noEmit + vite build; npm run 
   `quality.fix_scale` works on facts per filing (cd_cvm, source, dt_refer), not on quarters.
 - **Growth is same-company.** Never compute growth from sector totals; use `metrics._growth`.
 - **Financial sector has no revenue, margin or debt.** `company_panel` nulls them; keep it that way.
+- **The dashboard computes company LTM metrics client-side** (`Companies` in `web/src/data.ts`) from `empresas.json`,
+  a columnar per-company quarterly series (`pipeline.company_series`, fields in `COMPANY_FIELDS`). Keep the two in sync.
+- **The UI is a fixed-viewport terminal** (no page scroll above 980px): panels scroll internally, detail goes in
+  modals/drawers (`openModal`/`openDrawer` in `ui.ts`). Charts must be disposed on view change (`disposeIn`).
 - **JSON contracts are mirrored in `web/src/data.ts`.** Changing what `pipeline.publish` or `bulletin.generate` writes
   means updating those interfaces.
 - **Don't run local LLM inference unasked.** `etl bulletin --provider ollama` loads ~5.5 GB and pins the CPU for minutes

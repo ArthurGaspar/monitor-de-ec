@@ -114,15 +114,3 @@ def sector_quarters(panel: pd.DataFrame) -> pd.DataFrame:
             prev = by_q.get(shift_quarter(q, -4), cur.iloc[0:0])
             rows.append({"setor": sector, "quarter": q, **_summarize(cur, prev)})
     return pd.DataFrame(rows).sort_values(["setor", "quarter"]).reset_index(drop=True)
-
-
-def company_snapshot(panel: pd.DataFrame, quarter: str) -> pd.DataFrame:
-    """Indicadores dos últimos 12 meses de cada empresa que publicou no trimestre."""
-    cur = panel[panel["quarter"] == quarter]
-    prev = panel[panel["quarter"] == shift_quarter(quarter, -4)][["cd_cvm", "receita_12m", "lucro_12m"]]
-    df = cur.merge(prev, on="cd_cvm", how="left", suffixes=("", "_ant"))
-    df["receita_12m_aa"] = np.where(df["receita_12m_ant"] > 0, df["receita_12m"] / df["receita_12m_ant"] - 1, np.nan)
-    df["margem_12m"] = np.where(df["receita_12m"] > 0, df["lucro_12m"] / df["receita_12m"], np.nan)
-    df["div_liq_ebit"] = np.where(df["ebit_12m"] > 0, df["divida_liquida"] / df["ebit_12m"], np.nan)
-    df["div_liq_pl"] = np.where(df["pl"] > 0, df["divida_liquida"] / df["pl"], np.nan)
-    return df

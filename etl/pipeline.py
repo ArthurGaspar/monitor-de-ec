@@ -16,7 +16,7 @@ from . import config
 from .config import DB_PATH, EQUITY_HOLDINGS, RAW_DIR, SITE_DATA
 from .cvm import read_cadastro, read_zip
 from .extract import extract_all
-from .metrics import TOTAL, TOTAL_NONFIN, company_panel, company_snapshot, sector_quarters
+from .metrics import TOTAL, TOTAL_NONFIN, company_panel, sector_quarters
 from .quality import duplicate_holdings, fix_scale
 from .quarters import standalone_quarters, wide
 from .tesouro import latest_curve, quarter_average, read_tesouro, weekly_series
@@ -95,6 +95,27 @@ def latest_quarter(sectors: pd.DataFrame) -> tuple[str, bool]:
     return last, bool(total[last] < PARTIAL_COVERAGE * prev)
 
 
+COMPANY_FIELDS = ["receita", "lucro", "ebit", "divida_liquida", "pl", "ativo"]
+
+
+def company_series(panel: pd.DataFrame) -> dict:
+    """Série trimestral de cada empresa, em colunas, para o painel calcular 12 meses e indicadores em qualquer trimestre."""
+    quarters = sorted(panel["quarter"].unique())
+    idx = {q: i for i, q in enumerate(quarters)}
+    out = []
+    for cd, g in panel.groupby("cd_cvm"):
+        first = g.iloc[-1]
+        cols = []
+        for f in COMPANY_FIELDS:
+            col = [None] * len(quarters)
+            for q, v in zip(g["quarter"], g[f]):
+                col[idx[q]] = None if pd.isna(v) else round(v / BI, 4)
+            cols.append(col)
+        out.append({"cd": int(cd), "nome": first["nome_comercial"], "setor": first["setor"], "setor_cvm": first["setor_cvm"],
+                    "situacao": first["situacao"], "v": cols})
+    return {"trimestres": quarters, "campos": COMPANY_FIELDS, "empresas": out}
+
+
 def publish(data: dict, out_dir: Path = SITE_DATA) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     sectors, panel = data["sectors"], data["panel"]
@@ -114,13 +135,9 @@ def publish(data: dict, out_dir: Path = SITE_DATA) -> dict:
     order = sorted((s for s in by_sector if s not in (TOTAL, TOTAL_NONFIN)), key=lambda s: -at_latest(by_sector[s], "receita"))
     sector_names = {s: g["setor_cvm"].value_counts().index.tolist()[:6] for s, g in panel.groupby("setor")}
 
-    # Com o trimestre parcial, a tabela de empresas usa o anterior, em que todas já publicaram.
+    # Com o trimestre parcial, destaques e boletim usam o anterior, em que todas já publicaram.
     snap_quarter = quarters[-2] if partial else quarter
-    snap = company_snapshot(panel, snap_quarter)
-    companies = [{"cd_cvm": int(r.cd_cvm), "nome": r.nome_comercial, "setor": r.setor, "receita_12m": _bi(r.receita_12m),
-                  "lucro_12m": _bi(r.lucro_12m), "receita_12m_aa": _clean(r.receita_12m_aa), "margem_12m": _clean(r.margem_12m),
-                  "div_liq_ebit": _clean(r.div_liq_ebit, 2), "div_liq_pl": _clean(r.div_liq_pl), "ativo": _bi(r.ativo)}
-                 for r in snap.sort_values("ativo", ascending=False).itertuples()]
+    companies = company_series(panel)
 
     meta = {
         "gerado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),

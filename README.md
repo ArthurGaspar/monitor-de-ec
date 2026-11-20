@@ -27,8 +27,26 @@ Tesouro Transparente  preços e taxas diárias  ─┘   (GET condicional,   (DR
 | Trimestres | `etl/quarters.py` | Transforma períodos publicados em trimestres isolados. O 4º trimestre é a DFP anual menos o acumulado de nove meses. |
 | Indicadores | `etl/metrics.py` | Setores, crescimento mesmas-empresas, margem, dívida líquida / EBIT de 12 meses, indicadores por empresa. |
 | Tesouro | `etl/tesouro.py` | Taxa de 5 anos interpolada para prefixado e IPCA+, inflação implícita e a curva do dia. |
-| Carga e publicação | `etl/pipeline.py` | Grava tudo no DuckDB e publica o JSON do painel (cerca de 220 KB). |
+| Carga e publicação | `etl/pipeline.py` | Grava tudo no DuckDB e publica o JSON do painel: setores por trimestre, série trimestral de cada empresa e Tesouro (cerca de 770 KB, 230 KB comprimido). |
 | Boletim | `etl/bulletin.py` | Monta a ficha de fatos, pede o texto ao LLM e confere números e termos. |
+
+## O painel
+
+Um terminal de tela fixa, sem rolagem de página. O trimestre escolhido no topo vale para todas as telas, e os
+indicadores de 12 meses de cada empresa são recalculados no navegador a partir das séries trimestrais.
+
+| Tela | O que tem |
+|---|---|
+| Painel | indicadores do trimestre, mapa de calor setor × trimestre (receita a/a, lucro a/a, margem), nota do trimestre, agregado |
+| Setores | tabela de setores, quatro séries do setor escolhido, empresas do setor |
+| Empresas | tabela de todas as empresas com busca, filtros (porte, prejuízo, alavancagem, crescimento) e exportação em CSV |
+| Crédito | DL/EBIT por setor contra um ano antes, distribuição das empresas e da dívida por faixa, maiores dívidas líquidas |
+| Juros | prefixado, IPCA+ e inflação implícita de 5 anos, curva do dia, títulos ofertados |
+
+Clicar numa célula do mapa abre uma gaveta com as empresas daquele setor no trimestre e quanto cada uma explica do
+crescimento. Clicar numa empresa abre a ficha dela, com receita e lucro trimestrais, margem, alavancagem e patrimônio.
+Atalhos: `1`–`5` trocam de tela, `←` `→` trocam o trimestre, `/` ou `Ctrl K` abre a busca. A URL guarda tela,
+trimestre e setor.
 
 ## Decisões que mudam o resultado
 

@@ -1,262 +1,153 @@
 import "./style.css";
-import { barCompare, curveChart, heatmap, lineChart, redrawAll } from "./charts";
-import { type Bulletin, type Company, type Data, NONFIN, type SectorRow, TOTAL, fmtBi, fmtNum, fmtPct, loadAll, quarterLabel } from "./data";
+import { disposeIn, redrawAll } from "./charts";
+import { Companies, type Data, FIN, NONFIN, TOTAL, esc, loadAll, qLong, sectorRow, titleCase } from "./data";
+import { $, $$, closeLayer, icon, layerOpen } from "./ui";
+import { type Ctx, companyModal, credito, empresas, juros, metodologia, notaModal, painel, setores } from "./views";
 
-const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-const shortQ = (q: string) => q.slice(0, 4);
+const VIEWS = [
+  { id: "painel", label: "Painel", icon: icon.painel, render: painel },
+  { id: "setores", label: "Setores", icon: icon.setores, render: setores },
+  { id: "empresas", label: "Empresas", icon: icon.empresas, render: empresas },
+  { id: "credito", label: "Crédito", icon: icon.credito, render: credito },
+  { id: "juros", label: "Juros", icon: icon.juros, render: juros },
+] as const;
+type ViewId = (typeof VIEWS)[number]["id"];
 
-function rowAt(d: Data, sector: string, q: string): SectorRow | undefined {
-  return d.setores[sector]?.find((r) => r.q === q);
-}
+let view: ViewId = "painel";
+let ctx: Ctx;
 
-function prevYear(q: string): string {
-  return `${Number(q.slice(0, 4)) - 1}${q.slice(4)}`;
-}
-
-function tile(label: string, value: string, note: string) {
-  return `<div class="tile"><div class="tile-label">${label}</div><div class="tile-value">${value}</div><div class="tile-note">${note}</div></div>`;
-}
-
-function renderShell(d: Data) {
+function shell(d: Data) {
   const m = d.meta;
-  const q = m.trimestre_empresas;
-  const nf = rowAt(d, NONFIN, q), nf0 = rowAt(d, NONFIN, prevYear(q)), all = rowAt(d, TOTAL, q);
   const last = d.tesouro.semanal[d.tesouro.semanal.length - 1];
-  const lastQ = rowAt(d, TOTAL, m.ultimo_trimestre), prevQ = rowAt(d, TOTAL, q);
-  const partial = m.parcial && lastQ && prevQ
-    ? `<p class="notice">O ${quarterLabel(m.ultimo_trimestre)} ainda está chegando: ${lastQ.empresas} de cerca de ${prevQ.empresas} empresas já publicaram. Os destaques usam o ${quarterLabel(q)}, o último completo; os gráficos mostram os dois.</p>`
-    : "";
-
   $("#app").innerHTML = `
-  <header class="top">
-    <div>
-      <p class="eyebrow">Dados abertos da CVM e do Tesouro Direto</p>
-      <h1>Monitor da economia corporativa</h1>
-      <p class="lede">A economia brasileira vista pelos balanços das ${m.empresas_no_painel} companhias abertas que entregam ITR e DFP à CVM:
-      quem está vendendo mais, quem está ganhando dinheiro, quem está devendo demais, e quanto o Tesouro paga para se financiar.</p>
+  <header class="topbar">
+    <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="brand-name">Monitor <b>Corporativo</b></span></div>
+    <h1 class="view-title" id="view-title"></h1>
+    <div class="qstep" role="group" aria-label="Trimestre de referência">
+      <button class="icon-btn" id="q-prev" aria-label="Trimestre anterior">${icon.left}</button>
+      <select id="q-sel" aria-label="Trimestre">${[...m.trimestres].reverse().map((q) => `<option value="${q}">${qLong(q)}</option>`).join("")}</select>
+      <button class="icon-btn" id="q-next" aria-label="Próximo trimestre">${icon.right}</button>
+      <span class="badge warn" id="q-partial" hidden></span>
     </div>
-    <button class="theme" id="theme" type="button" aria-label="Alternar tema claro/escuro">◐</button>
+    <button class="cmd" id="cmd-open">${icon.search}<span>Buscar empresa, setor, tela</span><kbd>Ctrl K</kbd></button>
+    <button class="icon-btn" id="btn-nota" title="Nota do trimestre">${icon.nota}</button>
+    <button class="icon-btn" id="btn-method" title="Metodologia">${icon.info}</button>
+    <button class="icon-btn" id="btn-theme" title="Tema claro/escuro">${icon.theme}</button>
   </header>
-  ${partial}
-  <section class="tiles" aria-label="Destaques do ${quarterLabel(q)}">
-    ${tile(`Receita, ${quarterLabel(q)}`, fmtBi(nf?.receita, 0), `${fmtPct(nf?.receita_aa)} sobre um ano antes · não financeiras`)}
-    ${tile("Lucro líquido", fmtBi(all?.lucro, 1), `${fmtPct(all?.lucro_aa)} sobre um ano antes · todas`)}
-    ${tile("Margem líquida", fmtPct(nf?.margem, false), `era ${fmtPct(nf0?.margem, false)} um ano antes`)}
-    ${tile("Dívida líquida / EBIT 12m", fmtNum(nf?.div_liq_ebit) + "x", `era ${fmtNum(nf0?.div_liq_ebit)}x um ano antes`)}
-    ${tile("Empresas no prejuízo", String(all?.prejuizo ?? "–"), `de ${all?.empresas ?? "–"} que publicaram`)}
-    ${tile("Inflação implícita, 5 anos", fmtNum(last?.inflacao_implicita, 2) + "%", `prefixado ${fmtNum(last?.prefixado, 2)}% · IPCA+ ${fmtNum(last?.ipca, 2)}%`)}
-  </section>
-
-  <section class="card" id="boletim">
-    <div class="card-head"><h2>Boletim do trimestre</h2><div id="bulletin-picker"></div></div>
-    <div id="bulletin"></div>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><h2>O agregado</h2><p class="sub">Soma das empresas que publicaram em cada trimestre, em R$ bilhões correntes (sem correção pela inflação).</p></div>
-    <div class="grid3">
-      <figure><figcaption>Receita líquida trimestral · não financeiras</figcaption><div class="chart" id="c-receita"></div></figure>
-      <figure><figcaption>Lucro líquido trimestral</figcaption><div class="chart" id="c-lucro"></div></figure>
-      <figure><figcaption>Receita contra o mesmo trimestre do ano anterior · mesmas empresas</figcaption><div class="chart" id="c-cresc"></div></figure>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="card-head">
-      <h2>Setor a setor, trimestre a trimestre</h2>
-      <div class="seg" role="tablist" id="heat-metric">
-        <button data-m="receita_aa" class="on">Receita a/a</button><button data-m="lucro_aa">Lucro a/a</button><button data-m="margem">Margem líquida</button>
-      </div>
-    </div>
-    <p class="sub" id="heat-sub"></p>
-    <div class="chart heat" id="c-heat"></div>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><h2>Um setor de perto</h2><select id="sector"></select></div>
-    <p class="sub" id="sector-cvm"></p>
-    <div class="grid3">
-      <figure><figcaption>Receita, crescimento a/a</figcaption><div class="chart small" id="c-s-rec"></div></figure>
-      <figure><figcaption>Margem líquida</figcaption><div class="chart small" id="c-s-mar"></div></figure>
-      <figure><figcaption>Dívida líquida / EBIT 12 meses</figcaption><div class="chart small" id="c-s-div"></div></figure>
-    </div>
-    <h3>Empresas do setor · 12 meses até o ${quarterLabel(q)}</h3>
-    <div class="table-wrap"><table id="companies"></table></div>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><h2>Endividamento por setor</h2><p class="sub">Dívida líquida (empréstimos e financiamentos menos caixa e aplicações) dividida pelo EBIT dos últimos 12 meses: quantos anos de resultado operacional pagariam a dívida.</p></div>
-    <div class="chart tall" id="c-div"></div>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><h2>Tesouro Direto</h2><p class="sub">Taxa interpolada no prazo de 5 anos, toda semana desde 2019; inflação implícita é o que separa o prefixado do IPCA+ no mesmo prazo.</p></div>
-    <div class="grid2">
-      <figure><figcaption>Taxas de 5 anos, % ao ano</figcaption><div class="chart" id="c-tes"></div></figure>
-      <figure><figcaption>Curva em ${d.tesouro.curva.data.split("-").reverse().join("/")}</figcaption><div class="chart" id="c-curva"></div></figure>
-    </div>
-  </section>
-
-  <section class="card method">
-    <h2>Como os números são feitos</h2>
-    <ul>
-      <li><b>Fonte.</b> Demonstrações consolidadas das DFP (anuais) e ITR (trimestrais) em <a href="${m.fontes.cvm}">dados.cvm.gov.br</a>, cadastro de companhias da CVM e preços e taxas do <a href="${m.fontes.tesouro}">Tesouro Transparente</a>. Atualizado em ${new Date(m.gerado_em).toLocaleDateString("pt-BR")}.</li>
-      <li><b>Quem entra.</b> Empresas de registro categoria A (as que podem ter ações negociadas), inclusive as que tiveram o registro cancelado depois, para o passado não ficar só com as sobreviventes.</li>
-      <li><b>Quarto trimestre.</b> Não existe ITR do quarto trimestre: ele é a DFP anual menos o acumulado de nove meses.</li>
-      <li><b>Crescimento.</b> Sempre "mesmas empresas": compara só quem publicou nos dois trimestres, para IPOs e cancelamentos não virarem crescimento. Lucro a/a só existe quando o lucro do ano anterior é positivo.</li>
-      <li><b>Bancos e seguradoras.</b> Entram no lucro, mas não em receita, margem e dívida: o plano de contas deles não tem receita de vendas nem dívida no mesmo sentido.</li>
-      <li><b>Correções.</b> ${m.correcoes_escala} formulários com escala trocada (valores mil vezes fora) foram corrigidos. Ficaram de fora, para não contar o mesmo resultado duas vezes: ${m.excluidas.map((e) => `${esc(e.nome)} (${esc(e.motivo)})`).join("; ")}.</li>
-      <li><b>Limites.</b> Valores nominais, sem correção pela inflação. Holdings que consolidam controladas também listadas, mas com números diferentes, ainda contam em dobro. Setores com poucas empresas (Papel e celulose tem quatro) oscilam com uma empresa só.</li>
-      <li><b>Boletim.</b> Escrito por um LLM a partir de uma ficha de fatos calculada pelo ETL. Todo número do texto que não está na ficha aparece marcado. O texto descreve; não recomenda investimento.</li>
-    </ul>
-  </section>
-  <footer>Código e dados no repositório. Dados públicos da CVM e do Tesouro Nacional.</footer>`;
+  <nav class="rail" aria-label="Telas">
+    ${VIEWS.map((v, i) => `<a href="#/${v.id}" data-view="${v.id}" title="${v.label} (${i + 1})">${v.icon}<span>${v.label}</span></a>`).join("")}
+  </nav>
+  <main class="stage" id="stage"></main>
+  <footer class="statusbar">
+    <span><i class="led"></i>CVM DFP/ITR · ${m.trimestres[0].slice(0, 4)}–${m.ultimo_trimestre.slice(0, 4)}</span>
+    <span>${m.empresas_no_painel} companhias</span>
+    <span>${m.correcoes_escala} correções de escala</span>
+    <span>Tesouro Direto · ${last.data.split("-").reverse().join("/")}</span>
+    <span class="grow"></span>
+    <span>processado ${new Date(m.gerado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+    <span class="keys"><kbd>1</kbd>–<kbd>5</kbd> telas · <kbd>←</kbd><kbd>→</kbd> trimestre · <kbd>/</kbd> busca</span>
+  </footer>`;
 }
 
-function renderBulletin(d: Data) {
-  const box = $("#bulletin"), picker = $("#bulletin-picker");
-  if (!d.boletins.length) {
-    box.innerHTML = `<p class="empty">Nenhum boletim gerado ainda. Rode <code>uv run python -m etl bulletin</code>.</p>`;
-    return;
-  }
-  const show = (b: Bulletin) => {
-    let html = esc(b.texto);
-    const flagged = new Set(b.nao_verificados);
-    // Marca no texto os números que não estão na ficha de fatos.
-    html = html.replace(/[-+]?\d{1,3}(?:\.\d{3})*(?:,\d+)?|[-+]?\d+(?:,\d+)?/g, (n) =>
-      flagged.has(n.replace(/^[-+]/, "")) ? `<mark title="Número que não está na ficha de fatos">${n}</mark>` : n);
-    const blocks = html.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).map((p) =>
-      p.startsWith("# ") ? `<h3 class="b-title">${p.slice(2)}</h3>` : `<p>${p.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, " ")}</p>`);
-    const terms = b.termos_errados ?? [];
-    const check = (flagged.size
-      ? `<span class="warn">${flagged.size} número(s) fora da ficha de fatos, marcados no texto</span>`
-      : `<span class="ok">Todos os números conferem com a ficha de fatos</span>`) +
-      (terms.length ? `<br><span class="warn">Termos que contradizem os dados: ${terms.map(esc).join("; ")}</span>` : "");
-    box.innerHTML = `<article class="bulletin">${blocks.join("")}</article>
-      <p class="b-meta">${quarterLabel(b.trimestre)} · escrito por <code>${esc(b.modelo)}</code> (${esc(b.provedor)}) em ${new Date(b.gerado_em).toLocaleDateString("pt-BR")} · ${check}</p>`;
-  };
-  if (d.boletins.length > 1) {
-    picker.innerHTML = `<select id="b-sel">${d.boletins.map((b, i) => `<option value="${i}">${quarterLabel(b.trimestre)}</option>`).join("")}</select>`;
-    $<HTMLSelectElement>("#b-sel").onchange = (e) => show(d.boletins[Number((e.target as HTMLSelectElement).value)]);
-  }
-  show(d.boletins[0]);
+function render() {
+  const stage = $("#stage");
+  disposeIn(stage);
+  const v = VIEWS.find((x) => x.id === view)!;
+  $$("[data-view]").forEach((a) => a.classList.toggle("on", a.dataset.view === view));
+  $("#view-title").textContent = v.label;
+  $<HTMLSelectElement>("#q-sel").value = ctx.q;
+  const m = ctx.d.meta;
+  const partial = $("#q-partial");
+  const lastRow = sectorRow(ctx.d, TOTAL, m.ultimo_trimestre), prevRow = sectorRow(ctx.d, TOTAL, m.trimestre_empresas);
+  partial.hidden = !(m.parcial && ctx.q === m.ultimo_trimestre);
+  partial.textContent = `parcial · ${lastRow?.empresas ?? "?"}/${prevRow?.empresas ?? "?"} cias`;
+  partial.title = "O prazo do ITR é de 45 dias; nem todas as companhias publicaram este trimestre";
+  const qs = m.trimestres;
+  $<HTMLButtonElement>("#q-prev").disabled = ctx.q === qs[0];
+  $<HTMLButtonElement>("#q-next").disabled = ctx.q === qs[qs.length - 1];
+  v.render(stage, ctx);
+  const hash = `#/${view}?q=${ctx.q}${view === "setores" ? `&s=${encodeURIComponent(ctx.sector)}` : ""}`;
+  if (location.hash !== hash) history.replaceState(null, "", hash);
 }
 
-function series(d: Data, sector: string, key: keyof SectorRow): (number | null)[] {
-  const by = new Map((d.setores[sector] ?? []).map((r) => [r.q, r[key] as number | null]));
-  return d.meta.trimestres.map((q) => by.get(q) ?? null);
+function parseHash() {
+  const [path, query] = location.hash.replace(/^#\/?/, "").split("?");
+  if (VIEWS.some((v) => v.id === path)) view = path as ViewId;
+  const p = new URLSearchParams(query ?? "");
+  const q = p.get("q");
+  if (q && ctx.d.meta.trimestres.includes(q)) ctx.q = q;
+  const s = p.get("s");
+  if (s && (ctx.d.meta.setores.includes(s) || s === NONFIN || s === TOTAL)) ctx.sector = s;
 }
 
-function renderAggregate(d: Data) {
-  const x = d.meta.trimestres;
-  const bi = (v: number | null) => (v == null ? "–" : fmtNum(v, 0));
-  const xFmt = (s: string) => (s.endsWith("T1") ? shortQ(s) : "");
-  lineChart($("#c-receita"), x, [{ name: "Receita", data: series(d, NONFIN, "receita") }], bi, { xFmt });
-  lineChart($("#c-lucro"), x, [
-    { name: "Não financeiras", data: series(d, NONFIN, "lucro") },
-    { name: "Financeiras", data: series(d, "Financeiro", "lucro") },
-  ], bi, { zero: true, xFmt });
-  // Só receita: o lucro saindo da base deprimida de 2020 passa de +1.000% e achataria a linha. Ele está no mapa de calor.
-  lineChart($("#c-cresc"), x, [{ name: "Receita", data: series(d, NONFIN, "receita_aa") }], (v) => fmtPct(v, true, 0), { zero: true, xFmt });
-}
+// ---- busca (Ctrl+K) ----
 
-type HeatMetric = "receita_aa" | "lucro_aa" | "margem";
-const HEAT: Record<HeatMetric, { range: number; sub: string }> = {
-  receita_aa: { range: 0.3, sub: "Receita contra o mesmo trimestre do ano anterior, só com as empresas que publicaram nos dois. Bancos e seguradoras não têm receita comparável." },
-  lucro_aa: { range: 1, sub: "Lucro líquido contra o mesmo trimestre do ano anterior. Célula vazia: lucro somado negativo no ano anterior, ou menos de três empresas." },
-  margem: { range: 0.2, sub: "Lucro líquido sobre receita líquida no trimestre. Vermelho é prejuízo agregado do setor." },
-};
+type Hit = { kind: string; label: string; sub: string; run: () => void };
 
-function renderHeat(d: Data, metric: HeatMetric) {
-  const rows = d.meta.setores.filter((s) => metric === "lucro_aa" || s !== "Financeiro");
-  const cols = d.meta.trimestres;
-  const values = rows.map((s) => series(d, s, metric));
-  $("#heat-sub").textContent = HEAT[metric].sub;
-  const signed = metric !== "margem";
-  heatmap($("#c-heat"), rows, cols, values, (v) => fmtPct(v, signed, 0), HEAT[metric].range, (r, c) => {
-    const row = rowAt(d, rows[r], cols[c]);
-    if (!row) return `<b>${esc(rows[r])}</b><br>${quarterLabel(cols[c])}<br>sem dados`;
-    const n = metric === "receita_aa" ? row.receita_aa_n : metric === "lucro_aa" ? row.lucro_aa_n : row.empresas;
-    return `<b>${esc(rows[r])}</b><br>${quarterLabel(cols[c])}<br>${fmtPct(row[metric], signed)}<br>` +
-      `<span style="opacity:.7">receita ${fmtBi(row.receita)} · lucro ${fmtBi(row.lucro)}<br>${n} empresas na conta</span>`;
-  }, (s) => shortQ(s));
-}
-
-let sortKey: keyof Company = "receita_12m";
-let sortDir = -1;
-
-function renderSector(d: Data, sector: string) {
-  const x = d.meta.trimestres;
-  const xFmt = (s: string) => (s.endsWith("T1") ? shortQ(s) : "");
-  const fin = sector === "Financeiro";
-  $("#sector-cvm").textContent = `Setores da CVM incluídos: ${(d.meta.setores_cvm[sector] ?? []).join(", ")}.` +
-    (fin ? " Bancos e seguradoras só têm lucro comparável; receita, margem e dívida ficam vazias." : "");
-  lineChart($("#c-s-rec"), x, [{ name: "Receita a/a", data: series(d, sector, fin ? "lucro_aa" : "receita_aa") }], (v) => fmtPct(v, true, 0), { zero: true, xFmt });
-  lineChart($("#c-s-mar"), x, [{ name: "Margem", data: series(d, sector, "margem") }], (v) => fmtPct(v, false, 0), { zero: true, xFmt });
-  lineChart($("#c-s-div"), x, [{ name: "Dív. líq./EBIT", data: series(d, sector, "div_liq_ebit") }], (v) => (v == null ? "–" : fmtNum(v) + "x"), { xFmt });
-  $("#c-s-rec").previousElementSibling!.textContent = fin ? "Lucro, crescimento a/a" : "Receita, crescimento a/a";
-  renderTable(d, sector);
-}
-
-function renderTable(d: Data, sector: string) {
-  const cols: [keyof Company, string, (c: Company) => string][] = [
-    ["nome", "Empresa", (c) => esc(c.nome)],
-    ["receita_12m", "Receita 12m", (c) => fmtBi(c.receita_12m)],
-    ["receita_12m_aa", "Receita a/a", (c) => fmtPct(c.receita_12m_aa)],
-    ["lucro_12m", "Lucro 12m", (c) => fmtBi(c.lucro_12m)],
-    ["margem_12m", "Margem", (c) => fmtPct(c.margem_12m, false)],
-    ["div_liq_ebit", "Dív. líq./EBIT", (c) => (c.div_liq_ebit == null ? "–" : fmtNum(c.div_liq_ebit) + "x")],
+function palette() {
+  if ($(".palette")) return;
+  closeLayer();
+  const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const hits: Hit[] = [
+    ...VIEWS.map((v) => ({ kind: "Tela", label: v.label, sub: "", run: () => go(v.id) })),
+    ...ctx.d.meta.setores.map((s) => ({ kind: "Setor", label: s, sub: `${sectorRow(ctx.d, s, ctx.q)?.empresas ?? 0} cias`, run: () => go("setores", { sector: s }) })),
+    ...ctx.cos.list.map((c) => ({ kind: "Empresa", label: titleCase(c.nome), sub: c.setor, run: () => companyModal(ctx, c) })),
+    { kind: "Ação", label: "Metodologia", sub: "", run: () => metodologia(ctx.d) },
+    { kind: "Ação", label: "Nota do trimestre", sub: "", run: openNota },
   ];
-  const key = sector === "Financeiro" && sortKey === "receita_12m" ? "lucro_12m" : sortKey;
-  const list = d.empresas.filter((c) => c.setor === sector).sort((a, b) => {
-    const va = a[key], vb = b[key];
-    if (va == null) return 1;
-    if (vb == null) return -1;
-    return (typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number)) * sortDir;
-  });
-  const table = $("#companies");
-  table.innerHTML = `<thead><tr>${cols.map(([k, label]) =>
-    `<th data-k="${k}" class="${k === key ? "sorted" : ""}" aria-sort="${k === key ? (sortDir > 0 ? "ascending" : "descending") : "none"}">${label}${k === key ? (sortDir > 0 ? " ↑" : " ↓") : ""}</th>`).join("")}</tr></thead>
-    <tbody>${list.map((c) => `<tr>${cols.map(([k, , f]) => `<td class="${k === "nome" ? "name" : "num"}">${f(c)}</td>`).join("")}</tr>`).join("")}</tbody>`;
-  table.querySelectorAll<HTMLElement>("th").forEach((th) => (th.onclick = () => {
-    const k = th.dataset.k as keyof Company;
-    sortDir = k === sortKey ? -sortDir : k === "nome" ? 1 : -1;
-    sortKey = k;
-    renderTable(d, sector);
-  }));
+  const root = document.createElement("div");
+  root.className = "palette";
+  root.innerHTML = `<div class="scrim"></div><div class="pal" role="dialog" aria-label="Busca">
+    <label class="pal-in">${icon.search}<input placeholder="Empresa, setor ou tela" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></label>
+    <ul class="pal-list" role="listbox"></ul></div>`;
+  document.body.appendChild(root);
+  const input = root.querySelector("input")!, list = root.querySelector("ul")!;
+  let shown: Hit[] = [], sel = 0;
+  const close = () => root.remove();
+  const draw = () => {
+    const t = norm(input.value.trim());
+    shown = (t ? hits.filter((h) => norm(h.label).includes(t)) : hits.filter((h) => h.kind !== "Empresa").concat(hits.filter((h) => h.kind === "Empresa").slice(0, 6)))
+      .sort((a, b) => (t ? Number(!norm(a.label).startsWith(t)) - Number(!norm(b.label).startsWith(t)) : 0)).slice(0, 14);
+    sel = Math.min(sel, Math.max(0, shown.length - 1));
+    list.innerHTML = shown.length ? shown.map((h, i) => `<li role="option" class="${i === sel ? "on" : ""}" data-i="${i}">
+      <span class="pk">${h.kind}</span><span class="pl">${esc(h.label)}</span><span class="ps">${esc(h.sub)}</span></li>`).join("")
+      : `<li class="none">Nada encontrado</li>`;
+    $$<HTMLElement>("li[data-i]", list).forEach((li) => (li.onclick = () => { close(); shown[Number(li.dataset.i)].run(); }));
+  };
+  input.oninput = () => { sel = 0; draw(); };
+  input.onkeydown = (e) => {
+    if (e.key === "ArrowDown") { sel = Math.min(sel + 1, shown.length - 1); draw(); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); draw(); e.preventDefault(); }
+    else if (e.key === "Enter" && shown[sel]) { close(); shown[sel].run(); }
+    else if (e.key === "Escape") close();
+  };
+  root.querySelector(".scrim")!.addEventListener("click", close);
+  draw();
+  input.focus();
 }
 
-function renderDebt(d: Data) {
-  const q = d.meta.trimestre_empresas, q0 = prevYear(q);
-  const sectors = d.meta.setores.filter((s) => s !== "Financeiro" && rowAt(d, s, q)?.div_liq_ebit != null)
-    .sort((a, b) => (rowAt(d, b, q)!.div_liq_ebit ?? 0) - (rowAt(d, a, q)!.div_liq_ebit ?? 0));
-  const cats = [NONFIN, ...sectors];
-  barCompare($("#c-div"), cats, cats.map((s) => rowAt(d, s, q)?.div_liq_ebit ?? null), cats.map((s) => rowAt(d, s, q0)?.div_liq_ebit ?? null),
-    [quarterLabel(q), quarterLabel(q0)], (v) => (v == null ? "–" : fmtNum(v) + "x"));
+function openNota() {
+  const b = ctx.d.boletins.find((x) => x.trimestre === ctx.q) ?? ctx.d.boletins[0];
+  if (b) notaModal(b);
 }
 
-function renderTesouro(d: Data) {
-  const w = d.tesouro.semanal;
-  const x = w.map((r) => r.data);
-  const pct = (v: number | null) => (v == null ? "–" : fmtNum(v, 1) + "%");
-  lineChart($("#c-tes"), x, [
-    { name: "Prefixado", data: w.map((r) => r.prefixado) },
-    { name: "IPCA+ (real)", data: w.map((r) => r.ipca) },
-    { name: "Inflação implícita", data: w.map((r) => r.inflacao_implicita) },
-  ], pct, { xFmt: (s) => s.slice(0, 4) });
-  const pts = (tipo: string) => d.tesouro.curva.titulos.filter((t) => t.tipo === tipo)
-    .map((t) => [t.prazo_anos, t.taxa, t.vencimento] as [number, number, string]);
-  curveChart($("#c-curva"), [{ name: "Prefixado", points: pts("prefixado") }, { name: "IPCA+", points: pts("ipca") }]);
+function go(v: string, patch: Partial<Ctx> = {}) {
+  closeLayer();
+  Object.assign(ctx, patch);
+  view = v as ViewId;
+  render();
+}
+
+function setQuarter(q: string) {
+  if (!ctx.d.meta.trimestres.includes(q) || q === ctx.q) return;
+  ctx.q = q;
+  render();
 }
 
 function setupTheme() {
   const root = document.documentElement;
-  try {
-    const saved = localStorage.getItem("theme");
-    if (saved) root.dataset.theme = saved;
-  } catch { /* sem storage: segue o sistema */ }
-  $("#theme").onclick = () => {
+  try { const s = localStorage.getItem("theme"); if (s) root.dataset.theme = s; } catch { /* segue o sistema */ }
+  $("#btn-theme").onclick = () => {
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
     try { localStorage.setItem("theme", root.dataset.theme); } catch { /* ignora */ }
@@ -265,26 +156,46 @@ function setupTheme() {
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawAll);
 }
 
+function setupKeys() {
+  document.addEventListener("keydown", (e) => {
+    const typing = e.target instanceof Element && e.target.closest("input, select, textarea");
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); palette(); return; }
+    if (e.key === "Escape") { closeLayer(); return; }
+    if (typing || $(".palette")) return;
+    if (e.key === "/") { e.preventDefault(); palette(); return; }
+    if (layerOpen()) return;
+    const n = Number(e.key);
+    if (n >= 1 && n <= VIEWS.length) go(VIEWS[n - 1].id);
+    const qs = ctx.d.meta.trimestres, i = qs.indexOf(ctx.q);
+    if (e.key === "ArrowLeft" && i > 0) setQuarter(qs[i - 1]);
+    if (e.key === "ArrowRight" && i < qs.length - 1) setQuarter(qs[i + 1]);
+  });
+}
+
 async function main() {
   try {
     const d = await loadAll();
-    renderShell(d);
+    ctx = {
+      d, cos: new Companies(d.empresas), q: d.meta.trimestre_empresas, heat: "receita_aa", agg: "receita",
+      sector: d.meta.setores.find((s) => s !== FIN) ?? d.meta.setores[0], credit: "n", rates: "3",
+      screener: { text: "", setor: "", chips: new Set(), sort: { key: "rec", dir: -1 } },
+      sectorSort: { key: "rec", dir: -1 }, go, setQuarter,
+    };
+    shell(d);
+    parseHash();
     setupTheme();
-    renderBulletin(d);
-    renderAggregate(d);
-    renderHeat(d, "receita_aa");
-    $("#heat-metric").querySelectorAll<HTMLButtonElement>("button").forEach((b) => (b.onclick = () => {
-      $("#heat-metric").querySelectorAll("button").forEach((o) => o.classList.toggle("on", o === b));
-      renderHeat(d, b.dataset.m as HeatMetric);
-    }));
-    const sel = $<HTMLSelectElement>("#sector");
-    sel.innerHTML = d.meta.setores.map((s) => `<option>${esc(s)}</option>`).join("");
-    sel.onchange = () => renderSector(d, sel.value);
-    renderSector(d, d.meta.setores[0]);
-    renderDebt(d);
-    renderTesouro(d);
+    setupKeys();
+    $<HTMLSelectElement>("#q-sel").onchange = (e) => setQuarter((e.target as HTMLSelectElement).value);
+    $("#q-prev").onclick = () => { const qs = d.meta.trimestres; setQuarter(qs[qs.indexOf(ctx.q) - 1]); };
+    $("#q-next").onclick = () => { const qs = d.meta.trimestres; setQuarter(qs[qs.indexOf(ctx.q) + 1]); };
+    $("#cmd-open").onclick = palette;
+    $("#btn-method").onclick = () => metodologia(d);
+    $("#btn-nota").onclick = openNota;
+    $$<HTMLAnchorElement>("[data-view]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); go(a.dataset.view!); }));
+    window.addEventListener("hashchange", () => { parseHash(); render(); });
+    render();
   } catch (err) {
-    $("#app").innerHTML = `<p class="loading">Não consegui carregar os dados (${esc(String(err))}). Rode <code>uv run python -m etl run</code> antes.</p>`;
+    $("#app").innerHTML = `<p class="fatal">Não foi possível carregar os dados (${esc(String(err))}). Rode <code>uv run python -m etl run</code>.</p>`;
   }
 }
 
