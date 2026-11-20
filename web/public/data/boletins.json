@@ -1,0 +1,297 @@
+[
+ {
+  "trimestre": "2026T2",
+  "provedor": "ollama",
+  "modelo": "qwen2.5:7b",
+  "gerado_em": "2026-11-20T01:31:53+00:00",
+  "texto": "# Resultados do 2º trimestre de 2026\n\nA receita líquida das empresas não financeiras atingiu R$ 1.163,4 bilhões no 2º trimestre de 2026, crescendo 10,9% em comparação com o mesmo período do ano anterior. O lucro líquido totalizou R$ 90,2 bilhões, um aumento de 14,3% na comparação anual. As margens líquidas melhoraram para 7,8%, contra 7,3% no ano anterior, refletindo uma melhora na eficiência operacional.\n\nO setor de petróleo, gás e química registrou o maior crescimento de receita, com 36,4%, e lucro líquido, com 101,9%. Este setor se destacou, com uma margem líquida de 24,3%, comparada a 16,0% no mesmo período do ano anterior. No entanto, o setor de varejo e consumo apresentou um desempenho negativo, com uma queda de 538,2% no lucro líquido, devido a uma margem líquida negativa de 3,2%.\n\nEm termos de alavancagem, a dívida líquida sobre o EBIT (earnings before interest and taxes) para todas as empresas não financeiras foi de 3,1 vezes, um leve decréscimo em relação aos 3,2 do ano anterior. Este indicador sugere que as empresas estão utilizando uma proporção moderada de dívida em suas operações.\n\n# Tesouros e Custo do Dinheiro\n\nAs taxas do Tesouro Direto refletem uma situação de inflação moderada, com a taxa prefixada de 5 anos média no 2º trimestre de 2026 em 14,07%. O juro real, calculado como a taxa prefixada menos a inflação IPCA, foi de 7,94%. A inflação implicitamente medida, a IPCA, foi de 5,68%, um aumento de 0,3 pontos percentuais em relação ao trimestre anterior. Essas taxas indicam que o custo do dinheiro para as empresas continua elevado, refletindo a pressão inflacionária no país.",
+  "nao_verificados": [
+   "0,3"
+  ],
+  "termos_errados": [
+   "\"inflação ipca\": a taxa do IPCA+ é juro real, não a inflação"
+  ],
+  "fatos": {
+   "trimestre": "2º trimestre de 2026",
+   "codigo_trimestre": "2026T2",
+   "nao_financeiras": {
+    "empresas": 320,
+    "receita_liquida_bi": "1.163,4",
+    "crescimento_receita": "+10,9%",
+    "empresas_comparadas_receita": 314,
+    "lucro_liquido_bi": "90,2",
+    "crescimento_lucro_liquido": "+14,3%",
+    "margem_liquida": "7,8%",
+    "margem_liquida_um_ano_antes": "7,3%",
+    "empresas_com_prejuizo": 103,
+    "div_liq_ebit": "3,1",
+    "div_liq_ebit_um_ano_antes": "3,2"
+   },
+   "financeiro": {
+    "lucro_liquido_bi": "38,7",
+    "lucro_liquido_bi_um_ano_antes": "33,9",
+    "crescimento_lucro_liquido": "+14,8%"
+   },
+   "todas_empresas_lucro_liquido_bi": "128,9",
+   "setores_maior_crescimento_receita": [
+    {
+     "setor": "Petróleo, gás e química",
+     "empresas": 15,
+     "receita_liquida_bi": "249,0",
+     "crescimento_receita": "+36,4%",
+     "lucro_liquido_bi": "60,6",
+     "crescimento_lucro_liquido": "+101,9%",
+     "margem_liquida": "24,3%",
+     "margem_liquida_um_ano_antes": "16,0%",
+     "div_liq_ebit": "2,0",
+     "div_liq_ebit_um_ano_antes": "2,9"
+    },
+    {
+     "setor": "Saúde",
+     "empresas": 18,
+     "receita_liquida_bi": "45,8",
+     "crescimento_receita": "+22,5%",
+     "lucro_liquido_bi": "2,3",
+     "crescimento_lucro_liquido": "+57,9%",
+     "margem_liquida": "5,0%",
+     "margem_liquida_um_ano_antes": "3,9%",
+     "div_liq_ebit": "1,6",
+     "div_liq_ebit_um_ano_antes": "2,0"
+    },
+    {
+     "setor": "Saneamento e gás",
+     "empresas": 8,
+     "receita_liquida_bi": "25,1",
+     "crescimento_receita": "+12,2%",
+     "lucro_liquido_bi": "1,8",
+     "crescimento_lucro_liquido": "-39,2%",
+     "margem_liquida": "7,1%",
+     "margem_liquida_um_ano_antes": "10,2%",
+     "div_liq_ebit": "4,2",
+     "div_liq_ebit_um_ano_antes": "2,7"
+    }
+   ],
+   "setores_menor_crescimento_receita": [
+    {
+     "setor": "Papel, celulose e embalagens",
+     "empresas": 4,
+     "receita_liquida_bi": "17,2",
+     "crescimento_receita": "-9,4%",
+     "lucro_liquido_bi": "2,2",
+     "crescimento_lucro_liquido": "-61,3%",
+     "margem_liquida": "12,8%",
+     "margem_liquida_um_ano_antes": "29,9%",
+     "div_liq_ebit": "6,8",
+     "div_liq_ebit_um_ano_antes": "5,3"
+    },
+    {
+     "setor": "Agro e alimentos",
+     "empresas": 27,
+     "receita_liquida_bi": "237,7",
+     "crescimento_receita": "-0,2%",
+     "lucro_liquido_bi": "-0,2",
+     "crescimento_lucro_liquido": "-102,9%",
+     "margem_liquida": "-0,1%",
+     "margem_liquida_um_ano_antes": "2,7%",
+     "div_liq_ebit": "5,4",
+     "div_liq_ebit_um_ano_antes": "3,6"
+    },
+    {
+     "setor": "Indústria e bens de capital",
+     "empresas": 25,
+     "receita_liquida_bi": "41,9",
+     "crescimento_receita": "+2,6%",
+     "lucro_liquido_bi": "1,7",
+     "crescimento_lucro_liquido": "+2,9%",
+     "margem_liquida": "4,0%",
+     "margem_liquida_um_ano_antes": "4,0%",
+     "div_liq_ebit": "2,5",
+     "div_liq_ebit_um_ano_antes": "2,6"
+    }
+   ],
+   "todos_os_setores": [
+    {
+     "setor": "Petróleo, gás e química",
+     "empresas": 15,
+     "receita_liquida_bi": "249,0",
+     "crescimento_receita": "+36,4%",
+     "lucro_liquido_bi": "60,6",
+     "crescimento_lucro_liquido": "+101,9%",
+     "margem_liquida": "24,3%",
+     "margem_liquida_um_ano_antes": "16,0%",
+     "div_liq_ebit": "2,0",
+     "div_liq_ebit_um_ano_antes": "2,9"
+    },
+    {
+     "setor": "Agro e alimentos",
+     "empresas": 27,
+     "receita_liquida_bi": "237,7",
+     "crescimento_receita": "-0,2%",
+     "lucro_liquido_bi": "-0,2",
+     "crescimento_lucro_liquido": "-102,9%",
+     "margem_liquida": "-0,1%",
+     "margem_liquida_um_ano_antes": "2,7%",
+     "div_liq_ebit": "5,4",
+     "div_liq_ebit_um_ano_antes": "3,6"
+    },
+    {
+     "setor": "Varejo e consumo",
+     "empresas": 72,
+     "receita_liquida_bi": "208,2",
+     "crescimento_receita": "+7,1%",
+     "lucro_liquido_bi": "-6,8",
+     "crescimento_lucro_liquido": "-538,2%",
+     "margem_liquida": "-3,2%",
+     "margem_liquida_um_ano_antes": "2,0%",
+     "div_liq_ebit": "4,3",
+     "div_liq_ebit_um_ano_antes": "3,8"
+    },
+    {
+     "setor": "Mineração e siderurgia",
+     "empresas": 18,
+     "receita_liquida_bi": "99,7",
+     "crescimento_receita": "+3,8%",
+     "lucro_liquido_bi": "8,7",
+     "crescimento_lucro_liquido": "-33,2%",
+     "margem_liquida": "8,7%",
+     "margem_liquida_um_ano_antes": "13,5%",
+     "div_liq_ebit": "2,7",
+     "div_liq_ebit_um_ano_antes": "1,9"
+    },
+    {
+     "setor": "Energia elétrica",
+     "empresas": 24,
+     "receita_liquida_bi": "97,0",
+     "crescimento_receita": "+9,5%",
+     "lucro_liquido_bi": "10,1",
+     "crescimento_lucro_liquido": "+84,4%",
+     "margem_liquida": "10,4%",
+     "margem_liquida_um_ano_antes": "6,2%",
+     "div_liq_ebit": "3,9",
+     "div_liq_ebit_um_ano_antes": "3,2"
+    },
+    {
+     "setor": "Transporte e logística",
+     "empresas": 21,
+     "receita_liquida_bi": "57,8",
+     "crescimento_receita": "+9,8%",
+     "lucro_liquido_bi": "1,9",
+     "crescimento_lucro_liquido": "-41,0%",
+     "margem_liquida": "3,3%",
+     "margem_liquida_um_ano_antes": "3,2%",
+     "div_liq_ebit": "4,4",
+     "div_liq_ebit_um_ano_antes": "5,9"
+    },
+    {
+     "setor": "Saúde",
+     "empresas": 18,
+     "receita_liquida_bi": "45,8",
+     "crescimento_receita": "+22,5%",
+     "lucro_liquido_bi": "2,3",
+     "crescimento_lucro_liquido": "+57,9%",
+     "margem_liquida": "5,0%",
+     "margem_liquida_um_ano_antes": "3,9%",
+     "div_liq_ebit": "1,6",
+     "div_liq_ebit_um_ano_antes": "2,0"
+    },
+    {
+     "setor": "Telecom e tecnologia",
+     "empresas": 25,
+     "receita_liquida_bi": "44,4",
+     "crescimento_receita": "+8,0%",
+     "lucro_liquido_bi": "4,4",
+     "crescimento_lucro_liquido": "+19,7%",
+     "margem_liquida": "10,0%",
+     "margem_liquida_um_ano_antes": "5,7%",
+     "div_liq_ebit": "1,3",
+     "div_liq_ebit_um_ano_antes": "1,8"
+    },
+    {
+     "setor": "Indústria e bens de capital",
+     "empresas": 25,
+     "receita_liquida_bi": "41,9",
+     "crescimento_receita": "+2,6%",
+     "lucro_liquido_bi": "1,7",
+     "crescimento_lucro_liquido": "+2,9%",
+     "margem_liquida": "4,0%",
+     "margem_liquida_um_ano_antes": "4,0%",
+     "div_liq_ebit": "2,5",
+     "div_liq_ebit_um_ano_antes": "2,6"
+    },
+    {
+     "setor": "Construção e imóveis",
+     "empresas": 52,
+     "receita_liquida_bi": "33,1",
+     "crescimento_receita": "+11,2%",
+     "lucro_liquido_bi": "3,3",
+     "crescimento_lucro_liquido": "-17,5%",
+     "margem_liquida": "10,0%",
+     "margem_liquida_um_ano_antes": "10,9%",
+     "div_liq_ebit": "2,5",
+     "div_liq_ebit_um_ano_antes": "4,4"
+    },
+    {
+     "setor": "Saneamento e gás",
+     "empresas": 8,
+     "receita_liquida_bi": "25,1",
+     "crescimento_receita": "+12,2%",
+     "lucro_liquido_bi": "1,8",
+     "crescimento_lucro_liquido": "-39,2%",
+     "margem_liquida": "7,1%",
+     "margem_liquida_um_ano_antes": "10,2%",
+     "div_liq_ebit": "4,2",
+     "div_liq_ebit_um_ano_antes": "2,7"
+    },
+    {
+     "setor": "Papel, celulose e embalagens",
+     "empresas": 4,
+     "receita_liquida_bi": "17,2",
+     "crescimento_receita": "-9,4%",
+     "lucro_liquido_bi": "2,2",
+     "crescimento_lucro_liquido": "-61,3%",
+     "margem_liquida": "12,8%",
+     "margem_liquida_um_ano_antes": "29,9%",
+     "div_liq_ebit": "6,8",
+     "div_liq_ebit_um_ano_antes": "5,3"
+    },
+    {
+     "setor": "Outros",
+     "empresas": 11,
+     "receita_liquida_bi": "6,4",
+     "crescimento_receita": "+3,3%",
+     "lucro_liquido_bi": "0,1",
+     "crescimento_lucro_liquido": null,
+     "margem_liquida": "2,2%",
+     "margem_liquida_um_ano_antes": "0,1%",
+     "div_liq_ebit": "4,4",
+     "div_liq_ebit_um_ano_antes": "6,5"
+    },
+    {
+     "setor": "Financeiro",
+     "empresas": 21,
+     "receita_liquida_bi": null,
+     "crescimento_receita": null,
+     "lucro_liquido_bi": "38,7",
+     "crescimento_lucro_liquido": "+14,8%",
+     "margem_liquida": null,
+     "margem_liquida_um_ano_antes": null,
+     "div_liq_ebit": null,
+     "div_liq_ebit_um_ano_antes": null
+    }
+   ],
+   "tesouro": {
+    "taxa_prefixado_5_anos_media_no_trimestre": "14,07%",
+    "juro_real_ipca_mais_5_anos_media_no_trimestre": "7,94%",
+    "inflacao_implicita_5_anos_media_no_trimestre": "5,68%",
+    "taxa_prefixado_5_anos_media_no_trimestre_anterior": "13,56%",
+    "juro_real_ipca_mais_5_anos_media_no_trimestre_anterior": "7,76%",
+    "inflacao_implicita_5_anos_media_no_trimestre_anterior": "5,38%"
+   },
+   "notas": [
+    "valores em R$ bilhões, somando as empresas que publicaram no trimestre",
+    "crescimentos comparam as mesmas empresas com o mesmo trimestre do ano anterior",
+    "receita, margem e dívida excluem bancos e seguradoras"
+   ]
+  }
+ }
+]

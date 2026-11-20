@@ -1,0 +1,20 @@
+[project]
+name = "monitor-economia"
+version = "0.1.0"
+description = "ETL dos dados abertos da CVM (DFP/ITR) e do Tesouro Direto, com painel e boletins escritos por LLM"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=2.11.0",
+    "duckdb>=1.1",
+    "httpx>=0.27",
+    "pandas>=2.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
