@@ -93,7 +93,8 @@ kbd { border: 1px solid var(--line-strong); border-bottom-width: 2px; border-rad
 
 /* ---------- moldura: tudo cabe na janela ---------- */
 #app {
-  height: 100vh; display: grid;
+  /* --ads-banner: altura do banner de anúncios do perfil (ads.js), quando ele está na tela. */
+  height: calc(100vh - var(--ads-banner, 0px)); display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
   grid-template-rows: 46px minmax(0, 1fr) 26px;
   grid-template-areas: "top top" "rail stage" "status status";
@@ -311,7 +312,7 @@ mark { background: var(--warn-bg); color: var(--warn); padding: 0 2px; border-ra
 }
 @media (max-width: 980px) {
   body { overflow: auto; }
-  #app { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: 46px auto 1fr auto; grid-template-areas: "top" "rail" "stage" "status"; }
+  #app { height: auto; min-height: 100vh; padding-bottom: var(--ads-banner, 0px); grid-template-columns: 1fr; grid-template-rows: 46px auto 1fr auto; grid-template-areas: "top" "rail" "stage" "status"; }
   .brand { width: 44px; }
   .rail { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 4px 6px; }
   .rail a { flex: 1; min-width: 64px; }
